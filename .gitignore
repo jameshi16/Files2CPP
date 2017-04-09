@@ -27,3 +27,9 @@
 *.exe
 *.out
 *.app
+
+# Makefile files excludes
+links.txt
+libraries.txt
+links_d.txt
+libraries_d.txt
