@@ -25,7 +25,7 @@ If it isn't in the [releases](https://github.com/jameshi16/Files2CPP/releases), 
 If you have C++17 on your compiler already (lucky you!), change all the code to support that! If you do not have C++17 on your compiler, then compile it with the boost library, namely the `system` library and the `filesystem` library.
 
 ## Y U NO USE C++17 D:<
-GCC 6.3.0 still calls it c++0z :^(
+GCC 6.3.0 still calls it c++1z :^(
 
 I'll upgrade when:
 1. GCC updates and fully supports C++17
