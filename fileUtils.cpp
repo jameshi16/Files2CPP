@@ -16,7 +16,7 @@ const bool FileUtilities::getFileData(unsigned char*& array, unsigned int& size,
 
  /* File reading block */
   fileReader.seekg(0); //Probably not needed, but seeks back all the way to the start.
-  fileReader.read(static_cast<char*>(array), size); //reads the whole file and dumps it into array.
+  fileReader.read(reinterpret_cast<char*>(array), size); //reads the whole file and dumps it into array.
   if (fileReader.bad())
   {
     fileReader.close(); //properly closes the file
@@ -45,8 +45,8 @@ const std::size_t FileUtilities::getFileSize(std::ifstream& fileReader)
   std::size_t returnSize = 0;
 
   /* Finding out the size block */
-  fileReader.setg(0, fileReader.end); //sets the position to 0 relative to the end of the file
+  fileReader.seekg(0, fileReader.end); //sets the position to 0 relative to the end of the file
   returnSize = fileReader.tellg(); //tells the size
-  fileReader.setg(preMutation_position); //sets g back to its original position
+  fileReader.seekg(preMutation_position); //sets g back to its original position
   return returnSize; //returns the current return size -1.
 }
