@@ -4,7 +4,7 @@ Also known as Files to C++. Its a work in progress.
 ## What is this abomination?
 Files2CPP (Files to C++) is an example of a idea that happened at the spur of the moment. While developing a game, I thought: "Wouldn't it be cool if I could store all my game resources in a `.dll` or `.exe` file?"
 
-Hence, I went ahead and did some research. The [most common and the most platform independent way](http://stackoverflow.com/questions/6785214/how-to-embed-a-file-into-an-executable-file), was to get your file in hex, and then paste it into an array lying in a header file. (`unsigned int` or `unsigned char` are good for this)
+Hence, I went ahead and did some research. The [most common and the most platform independent way](http://stackoverflow.com/questions/7288279/how-to-embed-a-file-into-an-executable), was to get your file in hex, and then paste it into an array lying in a header file. (`unsigned int` or `unsigned char` are good for this)
 
 That is good and all, but isn't that a little problematic? I **am** making a game, so that means I would have tons upon tons of resources to throw into my header file. `#include`ing this header file will invoke a nightmarish disaster that will be unleashed upon the living realm.
 
