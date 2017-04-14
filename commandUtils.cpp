@@ -7,7 +7,7 @@ template <class N> //Template with a structure N (N would be passed around)
 std::map<std::string, CommandPack<N>> CommandUtilities::commandStore = {};
 
 template <class N> //Template with a structure N (N would be passed around)
-const bool CommandUtilities::processArgv(const char** argv, const int argc, N *pointerToN)
+const bool CommandUtilities::processArgv(char** argv, const int argc, N *pointerToN)
 {
   /* Variable declaration block*/
   std::string arguments{}; //creates a std::string out of the arguments
