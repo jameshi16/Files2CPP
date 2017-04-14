@@ -9,7 +9,7 @@
 template <class N> //Template with a structure N (N would be passed around)
 struct CommandPack
 {
-  typedef int* Command(std::string, N); //Typedef a fuction accepting std::string and arbitary struct N
+  typedef int* Command(std::string, N&); //Typedef a fuction accepting std::string and arbitary struct N
   CommandPack()=delete; //deletes default constructor
   CommandPack(Command p_command) {command = p_command;} //Creates a CommandPack based on the passed function
 
@@ -27,7 +27,7 @@ namespace CommandUtilities
    * @return            True or false depending if all or none of the commands worked
    */
   template <class N>
-  bool processArgv(char** argv, int argc, N *pointerToN);
+  const bool processArgv(const char** argv, const int argc, N *pointerToN);
 
   /**
    * Attempts to aquire the arguments after the flag

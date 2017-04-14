@@ -7,7 +7,7 @@ template <class N> //Template with a structure N (N would be passed around)
 std::map<std::string, CommandPack<N>> CommandUtilities::commandStore = {};
 
 template <class N> //Template with a structure N (N would be passed around)
-bool CommandUtilities::processArgv(char** argv, int argc, N *pointerToN)
+const bool CommandUtilities::processArgv(const char** argv, const int argc, N *pointerToN)
 {
   /* Variable declaration block*/
   std::string arguments{}; //creates a std::string out of the arguments
@@ -17,14 +17,28 @@ bool CommandUtilities::processArgv(char** argv, int argc, N *pointerToN)
   for (auto iii = 0; iii < argc; iii++) //transfers all of argv into the string
     arguments += argv[iii];
 
-  /* Flag aquire block */
+  /* Flag execution block */
   for (auto&& it : commandStore<N>) //loops through all iterations of commandStore
   {
     if ((n_pos = arguments.find(it.first)) != std::string::npos) //if a flag is found within the string
     {
-
+      auto flagArguments = gainArguments(n_pos + it.first.size(), arguments); //aquires flag arguments
+      if (flagArguments != "") //if the argument is not "" (error/not)
+      {
+        it.second.command(flagArguments, *pointerToN); //executes the command with the flag arguments and the pointer
+      }
     }
   }
+
+  /* Post-execution execution block */
+  try
+  {
+    commandStore<N>.at("").command("", *pointerToN); //atempts to execute the command at ""
+  }
+  catch (std::out_of_range&) //catches all out of range
+  {} //do absolutely nothing (its ok if the end-user does not define this)
+
+  return true; //Fuction sueccessfully completed
 
 }
 
