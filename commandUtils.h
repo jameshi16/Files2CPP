@@ -29,7 +29,8 @@ namespace CommandUtilities
 
   //Global store of commands
   template <class N> //Template with a structure N (N would be passed around)
-  extern std::map<std::string, CommandPack<N>> commandStore; //a vector of commands
+  extern std::map<std::string, CommandPack<N>> commandStore; //a map containing the flag name in string, and the command pack
+                                                             //if the flag is "", it will be executed after all of the flag names has been processed.
 };
 
 #endif
