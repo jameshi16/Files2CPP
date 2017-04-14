@@ -25,7 +25,7 @@ const bool CommandUtilities::processArgv(const char** argv, const int argc, N *p
       auto flagArguments = gainArguments(n_pos + it.first.size(), arguments); //aquires flag arguments
       if (flagArguments != "") //if the argument is not "" (error/not)
       {
-        it.second.command(flagArguments, *pointerToN); //executes the command with the flag arguments and the pointer
+        it.second(flagArguments, *pointerToN); //executes the command with the flag arguments and the pointer
       }
     }
   }
