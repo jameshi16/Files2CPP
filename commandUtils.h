@@ -11,10 +11,16 @@ struct CommandPack
 {
   typedef void* Command(std::string, N&); //Typedef a fuction accepting std::string and arbitary struct N
   CommandPack()=delete; //deletes default constructor
-  CommandPack(Command p_command) {command = p_command;} //Creates a CommandPack based on the passed function
-
+  CommandPack(Command p_command) {command = reinterpret_cast<void*>(p_command);} //Creates a CommandPack based on the passed function
+  /**
+   * The operator().
+   */
+  void operator()(std::string str_args, N &n)
+  {
+    reinterpret_cast<Command>(command)(str_args, n); //launches the command after the cast
+  }
   CommandPack<N>& operator=(const CommandPack<N>&)=default;
-  Command command = 0; //creates a command pointer pointing to nothing
+  void *command = nullptr; //creates a command pointer pointing to nothing
 };
 
 namespace CommandUtilities
