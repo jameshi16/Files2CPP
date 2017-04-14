@@ -3,11 +3,9 @@
 //System includes
 #include <exception>
 
-template <class N> //Template with a structure N (N would be passed around)
-std::map<std::string, CommandPack<N>> CommandUtilities::commandStore = {};
+std::map<std::string, CommandPack<N>> CommandUtilities::commandStore<N> = {};
 
-template <class N> //Template with a structure N (N would be passed around)
-const bool CommandUtilities::processArgv(char** argv, const int argc, N *pointerToN)
+const bool CommandUtilities::processArgv<N>(char** argv, const int argc, N *pointerToN)
 {
   /* Variable declaration block*/
   std::string arguments{}; //creates a std::string out of the arguments
