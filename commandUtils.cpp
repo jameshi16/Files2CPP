@@ -2,56 +2,75 @@
 
 //System includes
 #include <exception>
-
-std::map<std::string, CommandPack<N>> CommandUtilities::commandStore<N> = {};
-
-const bool CommandUtilities::processArgv<N>(char** argv, const int argc, N *pointerToN)
-{
-  /* Variable declaration block*/
-  std::string arguments{}; //creates a std::string out of the arguments
-  unsigned int n_pos = 0; //the position (used in flag aquiring block)
-
-  /* Variable assignment block */
-  for (auto iii = 0; iii < argc; iii++) //transfers all of argv into the string
-    arguments += argv[iii];
-
-  /* Flag execution block */
-  for (auto&& it : commandStore<N>) //loops through all iterations of commandStore
-  {
-    if ((n_pos = arguments.find(it.first)) != std::string::npos) //if a flag is found within the string
-    {
-      auto flagArguments = gainArguments(n_pos + it.first.size(), arguments); //aquires flag arguments
-      if (flagArguments != "") //if the argument is not "" (error/not)
-      {
-        it.second(flagArguments, *pointerToN); //executes the command with the flag arguments and the pointer
-      }
-    }
-  }
-
-  /* Post-execution execution block */
-  try
-  {
-    commandStore<N>.at("").command("", *pointerToN); //atempts to execute the command at ""
-  }
-  catch (std::out_of_range&) //catches all out of range
-  {} //do absolutely nothing (its ok if the end-user does not define this)
-
-  return true; //Fuction sueccessfully completed
-
-}
+#include <memory>
 
 const std::string CommandUtilities::gainArguments(const unsigned int pos_of_flag, const std::string& fullArgument)
 {
+  /* fullArgument check */
+  //Ensure that accessing pos_of_flag + 1 is < size().
+  if (pos_of_flag + 1 >= fullArgument.size())
+    return ""; //There is no arguments to gain here.
+
+  /* ENUM to represent what exists within the fullArgument string */
+  enum whatExists
+  {
+    START_DOUBLEQUOTES,
+    END_DOUBLEQUOTES,
+    START_SINGLEQUOTES,
+    END_SINGLEQUOTES,
+    PURE, //pure means no quotes, no flags, but just plain arguments.
+    FLAG,
+    NOTHING //The "null" of this enum (in an array of whatExists, use this as the max size in the array.)
+  };
+
+  /* Variable declaration */
+  unsigned int pos_var1               = 0; //The position variable used within expressions
+  uint8_t pos_closest                 = 7; //The position of <insert whatever here> closest to the pos_of_flag
+  std::unique_ptr<unsigned int[]> pos(new unsigned int[NOTHING]); //creates an unsigned int array with NOTHING as the size. This array represents the positions of the whatExists enum in fullArgument
+
+  for (unsigned int iii = 0; iii < NOTHING; iii++) //Fills with std::string::npos
+    pos[iii] = std::string::npos;
+
+  /* Finding the next positions double quotes, single quotes, flag, or nothing. */
+  pos[START_SINGLEQUOTES] = fullArgument.find("\'", pos_of_flag);
+  pos[END_SINGLEQUOTES]   = fullArgument.find("\'", pos[START_SINGLEQUOTES] + 1);
+  pos[START_DOUBLEQUOTES] = fullArgument.find("\"", pos_of_flag);
+  pos[END_SINGLEQUOTES]   = fullArgument.find("\"", pos[END_SINGLEQUOTES] + 1);
+  pos[FLAG]               = ((pos_var1 = fullArgument.find(" -", pos_of_flag)) != std::string::npos) ? (++pos_var1) : (pos_var1); //The space before '-' is intentional
+  pos[PURE]               = ((pos_var1 = fullArgument.find(" ", pos_of_flag)) != std::string::npos) ? (++pos_var1) : (pos_var1);
+
+  pos_var1 = 0; //resets temporary positions
+
+  /* Finds which one (only comparing START_ if available) comes first */
+  for (auto iii = 0; iii < NOTHING; iii++)
+  {
+    if (pos_closest == 7 || (pos[iii] < pos[pos_closest] && pos[iii] != std::string::npos))
+      pos_closest = iii; //sets the closest position to iii
+  }
+
+  /* Processing block */
+  //Single quotes
+  if (pos_closest == START_SINGLEQUOTES && pos[START_SINGLEQUOTES] != std::string::npos)
+    return fullArgument.substr(pos[pos_closest] + 1, pos[END_SINGLEQUOTES] - pos[START_SINGLEQUOTES] + 1);
+
+  //Double quotes
+  if (pos_closest == START_DOUBLEQUOTES && pos[START_DOUBLEQUOTES] != std::string::npos)
+    return fullArgument.substr(pos[pos_closest] + 1, pos[END_DOUBLEQUOTES] - pos[START_DOUBLEQUOTES] + 1);
+
+  //Pure
+  if (pos_closest == PURE && pos[FLAG] > pos[PURE])
+    return fullArgument.substr(pos[pos_closest], pos[FLAG] - pos[PURE] - 1);
+
+  /* Fall through */
+  return ""; //no arguments found
+}
+
+const std::string CommandUtilities::DEPRECATEDgainArguments(const unsigned int pos_of_flag, const std::string& fullArgument)
+{
   //Error checking
   {
-    for (unsigned int iii = pos_of_flag; iii < fullArgument.size(); iii++)
-    {
-      if (fullArgument[iii] != ' ')
-        break; //error check complete
-
-      if (iii + 1 == fullArgument.size())
-        return ""; //nothing after the flag!
-    }
+    if (fullArgument.find_first_not_of(" ", pos_of_flag + 1) == std::string::npos)
+      return "";
   }
 
   /* Variable declaration */
@@ -92,7 +111,7 @@ const std::string CommandUtilities::gainArguments(const unsigned int pos_of_flag
     return ""; //No arguments here
 
   //Nothing (a.k.a quoteless)
-  if (what_available & NOTHING)
+  if (what_available == NOTHING) //NOTHING is, in binary, 0000. Hence, it is required to use == (arithmetic) instead of & (bitwise).
   {
     currentPos = fullArgument.find_first_not_of(' ', pos_of_flag + 1); //finds the first character that is not a quote (this needs to be done anyway because currentPos will be set to std::string::npos all over the place)
     unsigned int n_count = fullArgument.find(' ', currentPos + 1) - currentPos; //the length from currentPos to the index before ' '
