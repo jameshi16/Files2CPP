@@ -7,12 +7,13 @@ const bool FileUtilities::getFileData(unsigned char*& array, unsigned int& size,
 {
   /* Variable declaration block */
   std::ifstream fileReader{fileLocation, std::ios::in | std::ios::binary}; //opens the file in binary mode
-  size = getFileSize(fileReader); //gets the file size
-  array = new unsigned char[size + 1]; //assigns the array to a block of memory size of the file + 1
 
   /* Error checking block */
   if (!fileReader) //If there is an error in trying to read the file
     return false;
+
+  size = getFileSize(fileReader); //gets the file size
+  array = new unsigned char[size + 1]; //assigns the array to a block of memory size of the file + 1
 
  /* File reading block */
   fileReader.seekg(0); //Probably not needed, but seeks back all the way to the start.
@@ -20,6 +21,7 @@ const bool FileUtilities::getFileData(unsigned char*& array, unsigned int& size,
   if (fileReader.bad())
   {
     fileReader.close(); //properly closes the file
+    delete[] array; //properly deletes the array
     return false; //reading failed
   }
 

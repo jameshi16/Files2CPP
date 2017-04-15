@@ -9,6 +9,7 @@ namespace FileUtilities
   /**
    * Gets the file as hex, and then creates a new array which the array pointer points to.
    * This function will do all it can to read absolutely everything. If the file size is more than std::size_t, **THIS FUNCTION WILL FAIL**.
+   * Also, at any point of time, if this function returns false, the array would not have formed. Deletion is not required.
    * If there is not enough memory to store ALL of the data, **THIS FUNCTION WILL FAIL**.
    * For a function that reads ONLY 100MB per call, please use getLargeFileData() instead.
    * @param  array        The pointer that is expected to be assigned to an array. It is recommended that this points to nullptr.
