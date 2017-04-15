@@ -73,13 +73,13 @@ namespace CommandUtilities
     /* Flag execution block */
     for (auto&& it : commandStore) //loops through all iterations of commandStore
     {
-      if ((n_pos = arguments.find(it.first)) != std::string::npos) //if a flag is found within the string
+      while ((n_pos = arguments.find(it.first, n_pos)) != std::string::npos) //if a flag is found within the string
       {
         auto flagArguments = gainArguments(n_pos + it.first.size() - 1, arguments); //aquires flag arguments
         if (flagArguments != "") //if the argument is not "" (error/not)
-        {
           it.second(flagArguments, *pointerToN); //executes the command with the flag arguments and the pointer
-        }
+
+        ++n_pos; //adds to n_pos, so that std::string::find can find the next flag.
       }
     }
 
