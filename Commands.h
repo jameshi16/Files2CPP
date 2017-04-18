@@ -14,6 +14,7 @@
 struct CommandsShare //The sturcture containing the variables to share among the Commands class
 {
   std::string str_directory{}; //the string storing the directory
+  std::string str_saveAsDirectoryP{}; //the directory to save as
 };
 
 /*
@@ -82,14 +83,70 @@ namespace Commands
 
   /**
    * Takes the user provided directory and places it into the CommandsShare.
-   * Flag: -upd, --upd, -userDir
+   * Flag: -upd, -userDir
    * @param args Tbe arguments.
    * @param cs   The shared structure that all functions will get access to.
    */
   void userProvidedDirectory(std::string args, CommandsShare& cs)
   {
-    //TODO: Place Boost filesystem library code to check if current directory is valid here
+    if (!boost::filesystem::exists(boost::filesystem::path(args)) && !boost::filesystem::is_directory(boost::filesystem::path(args)))
+      return; //returns, directory invalid
+
     cs.str_directory = args;
+  }
+
+  /**
+   * Saves the input as the parent directory for within the .cpp code.
+   * Flag: -sad, -saveAsDir
+   * @param args The arguments.
+   * @param cs   The shared structure that all functions will get access to.
+   */
+  void saveAsDirectory(std::string args, CommandsShare& cs)
+  {
+    if (!boost::filesystem::exists(boost::filesystem::path(args)) && !boost::filesystem::is_directory(boost::filesystem::path(args)))
+      return; //returns, directory invalid
+
+    cs.saveAsDirectory = args;
+  }
+
+  void finalProcess(std::string args, CommandsShare& cs)
+  {
+    /* CommandsShare check */
+    if (cs.str_directory == "") //if directory selected is empty
+      cs.str_directory = boost::filesystem::current_path(); //gets the current path
+
+    if (cs.str_saveAsDirectory == "") //if directory to save is empty
+      cs.str_saveAsDirectory = "./"; //dot path is best path
+
+    boost::filesystem::recursive_directory_iterator rdi{}; //points to the end iterator
+
+    /*** Main sequence ***/
+    /** Open/Create data.cpp/.h files **/
+    std::ofstream cppFile{"data.cpp", std::ios::trunc}; //opens (creates) a cpp file called data.cpp (TODO: Implement way to change this)
+    std::ofstream hFile  {"data.h", std::ios::trunc}; //opens (creates) a h file called data.h (TODO: Implement way to change this)
+    /** Check if opening was successful **/
+    if (!cppFile || !hFile)
+      return; //opening the files failed, will not proceed.
+
+    /** Standard code for CPP file **/
+    cppFile << "#include \"data.h\"" << std::endl "#include \"<memory>\"" << std::endl << std::endl; //2 end lines are intentional. //Headers
+    cppFile << "/**" << std::endl << "* The function to call in order to get data stored through the tool." << std::endl //Body
+    << "* @param path   The path of the file (if you didn't specify, the parent directory is ./)" << std::endl
+    << "* @param array  The char* pointer to contain a newly formed array. It should not be pointing to any array. (nullptr)" << std::endl
+    << "* @param size   The int to contain the size of the array." << std::endl
+    << "* @return       True if the path was found within the function and the array and size was overwritten, false if nothing was found within the function." << std::endl
+    << "bool acquireData(std::string path, unsigned char*& array, std::size_t& size)" << std::endl;
+    << "{" << std::endl;
+
+    /** Insertion of all of the files in the directory **/
+    for (auto&& it : boost::filesystem::recursive_directory_iterator{boost::filesystem::path(cs.str_directory)}) //loops through the entire filesystem (recursive)
+    {
+      cppFile << "  if (std::string(" << it.path().string() << ").find(path) != std::string::npos)" << std::endl
+      << "    {" << std::endl
+      << "      size = " << FileUtilities::getFileSize(it.path().string()) << std::endl
+      << "      array = new unsigned char[size]" << std::endl
+      << "      array = {"
+    }
   }
 
 };
