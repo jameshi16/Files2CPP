@@ -8,13 +8,16 @@
 #include <fstream>
 #include <limits>
 
+//Boost includes
+#include <boost/filesystem.hpp>
+
 //Self includes
 #include "fileUtils.h"
 
 struct CommandsShare //The sturcture containing the variables to share among the Commands class
 {
   std::string str_directory{}; //the string storing the directory
-  std::string str_saveAsDirectoryP{}; //the directory to save as
+  std::string str_saveAsDirectory{}; //the directory to save as
 };
 
 /*
@@ -106,14 +109,14 @@ namespace Commands
     if (!boost::filesystem::exists(boost::filesystem::path(args)) && !boost::filesystem::is_directory(boost::filesystem::path(args)))
       return; //returns, directory invalid
 
-    cs.saveAsDirectory = args;
+    cs.str_saveAsDirectory = args;
   }
 
   void finalProcess(std::string args, CommandsShare& cs)
   {
     /* CommandsShare check */
     if (cs.str_directory == "") //if directory selected is empty
-      cs.str_directory = boost::filesystem::current_path(); //gets the current path
+      cs.str_directory = boost::filesystem::current_path().string(); //gets the current path
 
     if (cs.str_saveAsDirectory == "") //if directory to save is empty
       cs.str_saveAsDirectory = "./"; //dot path is best path
@@ -129,13 +132,13 @@ namespace Commands
       return; //opening the files failed, will not proceed.
 
     /** Standard code for CPP file **/
-    cppFile << "#include \"data.h\"" << std::endl "#include \"<memory>\"" << std::endl << std::endl; //2 end lines are intentional. //Headers
+    cppFile << "#include \"data.h\"" << std::endl << "#include \"<memory>\"" << std::endl << std::endl; //2 end lines are intentional. //Headers
     cppFile << "/**" << std::endl << "* The function to call in order to get data stored through the tool." << std::endl //Body
     << "* @param path   The path of the file (if you didn't specify, the parent directory is ./)" << std::endl
     << "* @param array  The char* pointer to contain a newly formed array. It should not be pointing to any array. (nullptr)" << std::endl
     << "* @param size   The int to contain the size of the array." << std::endl
     << "* @return       True if the path was found within the function and the array and size was overwritten, false if nothing was found within the function." << std::endl
-    << "bool acquireData(std::string path, unsigned char*& array, std::size_t& size)" << std::endl;
+    << "bool acquireData(std::string path, unsigned char*& array, std::size_t& size)" << std::endl
     << "{" << std::endl;
 
     /** Insertion of all of the files in the directory **/
@@ -145,8 +148,43 @@ namespace Commands
       << "    {" << std::endl
       << "      size = " << FileUtilities::getFileSize(it.path().string()) << std::endl
       << "      array = new unsigned char[size]" << std::endl
-      << "      array = {"
+      << "      array = {";
+
+      /* The variables */
+      size_t theSize = 0; //The size
+      unsigned char* theArray = nullptr; //An array pointing to nothing
+
+      /* Check to ensure that function returns true */
+      if (FileUtilities::getFileData(theArray, theSize, it.path().string()))
+      {
+        for (unsigned int iii = 0; iii < theSize; iii++) //runs a loop to write every single hexadecimal into the file
+        {
+          /* Data writing block */
+          cppFile << "0x" << std::hex << theArray[iii]; //Writes the number
+
+          if (iii != theSize)
+          {
+            cppFile << ","; //writes a comma
+          }
+        }
+      }
+
+      /* Closes the curly braces */
+      cppFile << "}" << std::endl << std::endl; //make a single empty line after the braces
     }
+
+    cppFile << "}" << std::endl; //closes the function
+
+    /** Standard code for the header file **/
+    hFile << "#ifndef DATA_H" << std::endl
+    << "#define DATA_H" << std::endl
+    << "bool aquireData(std::string path, unsigned char*& array, std::size_t& size);" << std::endl << std::endl
+    << "#endif" << std::endl;
+
+    /** Completed Generation. Close all file streams **/
+    cppFile.close();
+    hFile.close();
+    return;
   }
 
 };
