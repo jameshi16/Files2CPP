@@ -73,7 +73,7 @@ namespace CommandUtilities
     /* Flag execution block */
     for (auto&& it : commandStore) //loops through all iterations of commandStore
     {
-      while ((n_pos = arguments.find(it.first, n_pos)) != std::string::npos) //if a flag is found within the string
+      while (it.first != "" && (n_pos = arguments.find(it.first, n_pos)) != std::string::npos) //if a flag is found within the string
       {
         auto flagArguments = gainArguments(n_pos + it.first.size() - 1, arguments); //aquires flag arguments
         if (flagArguments != "") //if the argument is not "" (error/not)
@@ -81,6 +81,7 @@ namespace CommandUtilities
 
         ++n_pos; //adds to n_pos, so that std::string::find can find the next flag.
       }
+      n_pos = 0; //resets n_pos
     }
 
     /* Post-execution execution block */
@@ -91,7 +92,7 @@ namespace CommandUtilities
     catch (std::out_of_range&) //catches all out of range
     {} //do absolutely nothing (its ok if the end-user does not define this)
 
-    return true; //Fuction sueccessfully completed
+    return true; //Function successfully completed
   }
 };
 

@@ -114,14 +114,29 @@ namespace Commands
 
   void finalProcess(std::string args, CommandsShare& cs)
   {
+    /* Print the directories to the user */
+    std::cout << "Directory to scan files from: " << cs.str_directory << std::endl;
+    std::cout << "Directory to save files as: " << cs.str_saveAsDirectory << std::endl;
+
     /* CommandsShare check */
     if (cs.str_directory == "") //if directory selected is empty
       cs.str_directory = boost::filesystem::current_path().string(); //gets the current path
 
     if (cs.str_saveAsDirectory == "") //if directory to save is empty
-      cs.str_saveAsDirectory = "./"; //dot path is best path
+      cs.str_saveAsDirectory = "."; //dot path is best path
 
-    boost::filesystem::recursive_directory_iterator rdi{}; //points to the end iterator
+    /* Convert all of the strings to boost's format */
+    cs.str_directory        = boost::filesystem::path(cs.str_directory).generic_string(); //makes str_directory a well-formed directory string
+    cs.str_saveAsDirectory  = boost::filesystem::path(cs.str_saveAsDirectory).generic_string(); //makes str_saveAsDirectory well-formed directory string
+
+    /* Modify str_directory to be a relative path according to str_saveAsDirectory. */
+    {
+      std::string currentDirectory = boost::filesystem::current_path().generic_string();
+      unsigned int n_pos = 0;
+
+      while ((n_pos = cs.str_directory.find(currentDirectory)) != std::string::npos)
+        cs.str_directory.replace(n_pos, currentDirectory.size(), cs.str_saveAsDirectory); //replaces the current directory with ./
+    }
 
     /*** Main sequence ***/
     /** Open/Create data.cpp/.h files **/
@@ -132,52 +147,70 @@ namespace Commands
       return; //opening the files failed, will not proceed.
 
     /** Standard code for CPP file **/
-    cppFile << "#include \"data.h\"" << std::endl << "#include \"<memory>\"" << std::endl << std::endl; //2 end lines are intentional. //Headers
-    cppFile << "/**" << std::endl << "* The function to call in order to get data stored through the tool." << std::endl //Body
+    cppFile << "#include \"data.h\"" << std::endl << "#include <memory>" << std::endl << std::endl; //2 end lines are intentional. //Headers
+    cppFile << "/**" << std::endl << "* The function to call in order to get data stored through the tool. Only supports ISO directory seperators, i.e. \"/\" not \"\\\"" << std::endl //Body
     << "* @param path   The path of the file (if you didn't specify, the parent directory is ./)" << std::endl
     << "* @param array  The char* pointer to contain a newly formed array. It should not be pointing to any array. (nullptr)" << std::endl
     << "* @param size   The int to contain the size of the array." << std::endl
     << "* @return       True if the path was found within the function and the array and size was overwritten, false if nothing was found within the function." << std::endl
+    << "**/"
     << "bool acquireData(std::string path, unsigned char*& array, std::size_t& size)" << std::endl
     << "{" << std::endl;
 
     /** Insertion of all of the files in the directory **/
     for (auto&& it : boost::filesystem::recursive_directory_iterator{boost::filesystem::path(cs.str_directory)}) //loops through the entire filesystem (recursive)
     {
-      cppFile << "  if (std::string(" << it.path().string() << ").find(path) != std::string::npos)" << std::endl
+      /* Ignore files2cpp.exe, data.h, and data.cpp. (Data.h and Data.cpp customizable soon) */
+      if (it.path().generic_string().find("files2cpp.exe") != std::string::npos)
+        continue; //skips this loop
+
+      if (it.path().generic_string().find("data.cpp") != std::string::npos)
+        continue; //skips this loop
+
+      if (it.path().generic_string().find("data.h") != std::string::npos)
+        continue; //skips this loop
+
+      std::cout << "Writing file: " << it.path().generic_string() << std::endl;
+
+      cppFile << "  if (std::string(\"" << it.path().generic_string() << "\").find(path) != std::string::npos)" << std::endl
       << "    {" << std::endl
-      << "      size = " << FileUtilities::getFileSize(it.path().string()) << std::endl
-      << "      array = new unsigned char[size]" << std::endl
-      << "      array = {";
+      << "      size = " << static_cast<unsigned int>(FileUtilities::getFileSize(it.path().generic_string())) << ";" << std::endl
+      << "      array = new unsigned char[size] {";
 
       /* The variables */
       size_t theSize = 0; //The size
       unsigned char* theArray = nullptr; //An array pointing to nothing
 
       /* Check to ensure that function returns true */
-      if (FileUtilities::getFileData(theArray, theSize, it.path().string()))
+      if (FileUtilities::getFileData(theArray, theSize, it.path().generic_string()))
       {
         for (unsigned int iii = 0; iii < theSize; iii++) //runs a loop to write every single hexadecimal into the file
         {
           /* Data writing block */
-          cppFile << "0x" << std::hex << theArray[iii]; //Writes the number
+          cppFile << "0x" << std::hex << static_cast<unsigned int>(theArray[iii]); //Writes the number
 
-          if (iii != theSize)
+          if (iii + 1 != theSize)
           {
             cppFile << ","; //writes a comma
           }
         }
+        delete[] theArray; //deletes the array
       }
 
       /* Closes the curly braces */
-      cppFile << "}" << std::endl << std::endl; //make a single empty line after the braces
+      cppFile << "};" << std::endl; //make a single empty line after the braces
+      cppFile << "      return true;" << std::endl; //allows the function to return straight away
+      cppFile << "    }" << std::endl; //closes the if braces
     }
 
+    cppFile << "  return false;" << std::endl; //returns false
     cppFile << "}" << std::endl; //closes the function
 
     /** Standard code for the header file **/
     hFile << "#ifndef DATA_H" << std::endl
-    << "#define DATA_H" << std::endl
+    << "#define DATA_H" << std::endl << std::endl
+    << "#include <iostream>" << std::endl
+    << "#include <string>" << std::endl
     << "bool aquireData(std::string path, unsigned char*& array, std::size_t& size);" << std::endl << std::endl
     << "#endif" << std::endl;
 
