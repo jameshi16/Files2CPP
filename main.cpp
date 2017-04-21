@@ -18,8 +18,13 @@ int main(int argc, char** argv)
   CommandsShare cs; //"N"
   StoreOfCommands commandStore = {};
 
+  cs.str_directory = "C:\\Users\\acer\\Downloads\\test";
+
   /* Emplace functions into map */
   commandStore.emplace(std::make_pair("-t", CommandPack<CommandsShare>{Commands::test}));
+  commandStore.emplace(std::make_pair("-upd", CommandPack<CommandsShare>{Commands::userProvidedDirectory}));
+  commandStore.emplace(std::make_pair("-sad", CommandPack<CommandsShare>{Commands::saveAsDirectory}));
+  commandStore.emplace(std::make_pair("", CommandPack<CommandsShare>{Commands::finalProcess}));
 
   /* Processes the argv array */
   CommandUtilities::processArgv(argv, argc, commandStore, &cs);
