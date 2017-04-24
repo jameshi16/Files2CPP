@@ -7,6 +7,7 @@
 #include <memory>
 #include <fstream>
 #include <limits>
+#include <sstream>
 
 //Boost includes
 #include <boost/filesystem.hpp>
@@ -18,7 +19,16 @@ struct CommandsShare //The sturcture containing the variables to share among the
 {
   std::string str_directory{}; //the string storing the directory
   std::string str_saveAsDirectory{}; //the directory to save as
+  unsigned int n_maxSizePerFile = 0; //the maximum size per cpp file
 };
+
+std::string itos(int n_arg)
+{
+  std::stringstream ss; //creates a stringstream object
+  ss << n_arg; //pushes s_arg into string stream.
+
+  return ss.str(); //returns the string
+}
 
 /*
 The namespace Commands. All fuctions within this namespace is CommandUtilities compliant; and can be used on it.
@@ -114,9 +124,10 @@ namespace Commands
 
   void finalProcess(std::string args, CommandsShare& cs)
   {
-    /* Print the directories to the user */
+    /* Print the inputs to the user */
     std::cout << "Directory to scan files from: " << cs.str_directory << std::endl;
     std::cout << "Directory to save files as: " << cs.str_saveAsDirectory << std::endl;
+    std::cout << "The maximum size per .cpp file is: " << cs.n_maxSizePerFile << std::endl;
 
     /* CommandsShare check */
     if (cs.str_directory == "") //if directory selected is empty
@@ -140,8 +151,11 @@ namespace Commands
 
     /*** Main sequence ***/
     /** Open/Create data.cpp/.h files **/
-    std::ofstream cppFile{"data.cpp", std::ios::trunc}; //opens (creates) a cpp file called data.cpp (TODO: Implement way to change this)
-    std::ofstream hFile  {"data.h", std::ios::trunc}; //opens (creates) a h file called data.h (TODO: Implement way to change this)
+    std::ofstream cppFile {"data.cpp", std::ios::trunc}; //opens (creates) a cpp file called data.cpp (TODO: Implement way to change this)
+    std::ofstream hFile   {"data.h", std::ios::trunc}; //opens (creates) a h file called data.h (TODO: Implement way to change this)
+    std::ofstream dataFile{}; //do not open any files. This stream will be used to write the variety of arrays.
+    /** Create unsigned ints to track the id of the file **/
+    unsigned int n_identification = 0; //starts at 0
     /** Check if opening was successful **/
     if (!cppFile || !hFile)
       return; //opening the files failed, will not proceed.
@@ -153,7 +167,7 @@ namespace Commands
     << "* @param array  The char* pointer to contain a newly formed array. It should not be pointing to any array. (nullptr)" << std::endl
     << "* @param size   The int to contain the size of the array." << std::endl
     << "* @return       True if the path was found within the function and the array and size was overwritten, false if nothing was found within the function." << std::endl
-    << "**/"
+    << "**/" << std::endl
     << "bool acquireData(std::string path, unsigned char*& array, std::size_t& size)" << std::endl
     << "{" << std::endl;
 
@@ -170,7 +184,11 @@ namespace Commands
       if (it.path().generic_string().find("data.h") != std::string::npos)
         continue; //skips this loop
 
-      std::cout << "Writing file: " << it.path().generic_string() << std::endl;
+      /* Variable declaration: declaring the basic file name and the part number (The number that determines what part of the data the function is going to return) */
+      unsigned int partNumber = 1; //the part number
+      std::string fileName = "file" + itos(n_identification) + "_" + itos(partNumber) << ".cpp"; //creates the fileName
+
+      std::cout << "Writing the file: " << it.path().generic_string() << std::endl;
 
       cppFile << "  if (std::string(\"" << it.path().generic_string() << "\").find(path) != std::string::npos)" << std::endl
       << "    {" << std::endl
@@ -184,6 +202,19 @@ namespace Commands
       /* Check to ensure that function returns true */
       if (FileUtilities::getFileData(theArray, theSize, it.path().generic_string()))
       {
+        /* Opens the dataFile */
+        dataFile.open(fileName, std::ios::out | std::ios::binary | std::ios::trunc); //opens the dataFile.
+
+        /* Basic dataFile structure */
+        dataFile << "#include \"data.h\"" << std::endl
+        << "#include <iostream>" << std::endl
+        << std::endl
+        << "/**" << std::endl
+        << "One of the many functions that contain part of the data for this file." << std::endl
+        << "**/" << std::endl
+        << "" //NOTE: Left off here
+
+        /* This loop will distribute the array to different files */
         for (unsigned int iii = 0; iii < theSize; iii++) //runs a loop to write every single hexadecimal into the file
         {
           /* Data writing block */
@@ -201,6 +232,9 @@ namespace Commands
       cppFile << "};" << std::endl; //make a single empty line after the braces
       cppFile << "      return true;" << std::endl; //allows the function to return straight away
       cppFile << "    }" << std::endl; //closes the if braces
+
+      /* Increments the identification number */
+      n_identification++; //adds 1 to the identification
     }
 
     cppFile << "  return false;" << std::endl; //returns false
@@ -210,7 +244,7 @@ namespace Commands
     hFile << "#ifndef DATA_H" << std::endl
     << "#define DATA_H" << std::endl << std::endl
     << "#include <iostream>" << std::endl
-    << "#include <string>" << std::endl
+    << "#include <string>" << std::endl << std::endl
     << "bool aquireData(std::string path, unsigned char*& array, std::size_t& size);" << std::endl << std::endl
     << "#endif" << std::endl;
 
