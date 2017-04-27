@@ -167,8 +167,8 @@ namespace Commands
     << "* @param array  The char* pointer to contain a newly formed array. It should not be pointing to any array. (nullptr)" << std::endl
     << "* @param size   The int to contain the size of the array." << std::endl
     << "* @return       True if the path was found within the function and the array and size was overwritten, false if nothing was found within the function." << std::endl
-    << "**/" << std::endl
-    << "bool acquireData(std::string path, unsigned char*& array, std::size_t& size)" << std::endl
+    << "**/"
+    << "bool Data::acquireData(std::string path, unsigned char*& array, std::size_t& size)" << std::endl
     << "{" << std::endl;
 
     /** Insertion of all of the files in the directory **/
@@ -188,8 +188,9 @@ namespace Commands
       unsigned int partNumber = 1; //the part number
       std::string fileName = "file" + itos(n_identification) + "_" + itos(partNumber) << ".cpp"; //creates the fileName
 
-      std::cout << "Writing the file: " << it.path().generic_string() << std::endl;
+      std::cout << "Writing the file: " << it.path().generic_string() << std::endl; //Tells the console
 
+      /* TODO: Rewrite this block to support the new fragmented data */
       cppFile << "  if (std::string(\"" << it.path().generic_string() << "\").find(path) != std::string::npos)" << std::endl
       << "    {" << std::endl
       << "      size = " << static_cast<unsigned int>(FileUtilities::getFileSize(it.path().generic_string())) << ";" << std::endl
@@ -202,17 +203,35 @@ namespace Commands
       /* Check to ensure that function returns true */
       if (FileUtilities::getFileData(theArray, theSize, it.path().generic_string()))
       {
-        /* Opens the dataFile */
-        dataFile.open(fileName, std::ios::out | std::ios::binary | std::ios::trunc); //opens the dataFile.
+        /* This loop will distribute the array to different files */
+        for (unsigned int iii = 0; iii < theSize; /*Adding done within the loop*/)
+        {
+          /* Adds 10000 to iii*/
+          if ((iii += 10000) > theSize)
+            iii = theSize; //sets iii to the size
 
-        /* Basic dataFile structure */
-        dataFile << "#include \"data.h\"" << std::endl
-        << "#include <iostream>" << std::endl
-        << std::endl
-        << "/**" << std::endl
-        << "One of the many functions that contain part of the data for this file." << std::endl
-        << "**/" << std::endl
-        << "" //NOTE: Left off here
+          /* Opens the dataFile */
+          dataFile.open(fileName, std::ios::out | std::ios::binary | std::ios::trunc); //opens the dataFile.
+
+          /* Basic dataFile structure */
+          dataFile << "#include \"data.h\"" << std::endl
+          << "#include <iostream>" << std::endl
+          << "#include <memory>" << std::endl
+          << std::endl
+          << "/**" << std::endl
+          << "One of the many functions that contain part of the data for this file." << std::endl
+          << "**/" << std::endl
+          << "bool file" << itos(n_identification) << "_" << itos(partNumber) << "(char*& array, std::size_t& size)" << std::endl
+          << "{" << std::endl
+          << "  array = new unsigned char[" << iii << "] {";
+
+          /* Loop to insert data */
+          for (unsigned int jjj = iii - 10000; jjj < iii; jjj++) //at this point, iii should already be a multiple of 10000
+          {
+            dataFile << "0x" << static_cast<unsigned int>theArray[jjj]; //writes the number in hex
+            
+          }
+        }
 
         /* This loop will distribute the array to different files */
         for (unsigned int iii = 0; iii < theSize; iii++) //runs a loop to write every single hexadecimal into the file
@@ -244,8 +263,11 @@ namespace Commands
     hFile << "#ifndef DATA_H" << std::endl
     << "#define DATA_H" << std::endl << std::endl
     << "#include <iostream>" << std::endl
-    << "#include <string>" << std::endl << std::endl
-    << "bool aquireData(std::string path, unsigned char*& array, std::size_t& size);" << std::endl << std::endl
+    << "#include <string>" << std::endl
+    << "namespace Data" << std::endl
+    << "{" << std::endl
+    << "  bool aquireData(std::string path, unsigned char*& array, std::size_t& size);" << std::endl << std::endl
+    << "}" << std::endl
     << "#endif" << std::endl;
 
     /** Completed Generation. Close all file streams **/
